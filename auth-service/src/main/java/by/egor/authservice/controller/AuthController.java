@@ -1,0 +1,33 @@
+package by.egor.authservice.controller;
+
+import by.egor.authservice.dto.AuthResponse;
+import by.egor.authservice.dto.LoginRequest;
+import by.egor.authservice.dto.RegisterRequest;
+import by.egor.authservice.dto.UserResponse;
+import by.egor.authservice.service.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final UserService userService;
+
+    @PostMapping("/register")
+    public ResponseEntity<UserResponse> register(@RequestBody RegisterRequest registerRequest) {
+        UserResponse userResponse = userService.register(registerRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(userResponse);
+    }
+
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest loginRequest) {
+        AuthResponse authResponse = userService.login(loginRequest);
+        return ResponseEntity.ok(authResponse);
+    }
+}

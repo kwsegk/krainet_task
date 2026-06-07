@@ -1,4 +1,4 @@
-package by.egor.authservice.dao;
+package by.egor.authservice.repository;
 
 import by.egor.authservice.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;

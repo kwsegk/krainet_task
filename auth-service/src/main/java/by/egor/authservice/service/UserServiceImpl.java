@@ -1,14 +1,16 @@
 package by.egor.authservice.service;
 
-import by.egor.authservice.dao.UserRepository;
+import by.egor.authservice.repository.UserRepository;
 import by.egor.authservice.dto.*;
 import by.egor.authservice.entity.Role;
 import by.egor.authservice.entity.User;
+import by.egor.authservice.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.filter.CharacterEncodingFilter;
 
 import java.util.List;
 
@@ -19,6 +21,8 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
 
     @Override
     public UserResponse register(RegisterRequest registerRequest) {
@@ -43,7 +47,20 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public AuthResponse login(LoginRequest loginRequest) {
-        return null;
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginRequest.getUsername(),
+                        loginRequest.getPassword()
+                )
+        );
+
+        User user = userRepository.findByUsername(loginRequest.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String token = jwtService.generateToken(user);
+        log.info("User logged in: {}", user.getUsername());
+
+        return new AuthResponse(token);
     }
 
     @Override

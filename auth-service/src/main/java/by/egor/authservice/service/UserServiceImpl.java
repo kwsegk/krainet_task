@@ -1,5 +1,8 @@
 package by.egor.authservice.service;
 
+import by.egor.authservice.exception.AccessDeniedException;
+import by.egor.authservice.exception.ConflictException;
+import by.egor.authservice.exception.ResourceNotFoundException;
 import by.egor.authservice.repository.UserRepository;
 import by.egor.authservice.dto.*;
 import by.egor.authservice.entity.Role;
@@ -25,12 +28,13 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
     @Override
     @Transactional
     public UserResponse register(RegisterRequest registerRequest) {
         if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
-            throw new RuntimeException("Username is already in use");
+            throw new ConflictException("Username is already in use");
         }
 
         User user = User.builder()
@@ -58,12 +62,13 @@ public class UserServiceImpl implements UserService {
         );
 
         User user = userRepository.findByUsername(loginRequest.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        String token = jwtService.generateToken(user);
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = refreshTokenService.createRefreshToken(user).getToken();
         log.info("User logged in: {}", user.getUsername());
 
-        return new AuthResponse(token);
+        return new AuthResponse(accessToken, refreshToken);
     }
 
     @Override
@@ -72,13 +77,13 @@ public class UserServiceImpl implements UserService {
         log.info("Fetching user by id: {}", id);
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
         User currentUser = (User) SecurityContextHolder.getContext()
                 .getAuthentication().getPrincipal();
 
         if (currentUser.getRole() == Role.USER && !currentUser.getId().equals(id)) {
-            throw new RuntimeException("You can only view your own account");
+            throw new AccessDeniedException("You can only view your own account");
         }
 
         return toResponse(user);
@@ -101,13 +106,13 @@ public class UserServiceImpl implements UserService {
         log.info("Updating user with id: {}", id);
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
         User currentUser = (User) SecurityContextHolder.getContext()
                 .getAuthentication().getPrincipal();
 
         if (currentUser.getRole() == Role.USER && !currentUser.getId().equals(id)) {
-            throw new RuntimeException("You can only update your own account");
+            throw new AccessDeniedException("You can only update your own account");
         }
 
         user.setUsername(updateRequest.getUsername());
@@ -127,14 +132,14 @@ public class UserServiceImpl implements UserService {
         log.info("Deleting user with id: {}", id);
 
         if (!userRepository.existsById(id)) {
-            throw new RuntimeException("User not found with id: " + id);
+            throw new ResourceNotFoundException("User not found with id: " + id);
         }
 
         User currentUser = (User) SecurityContextHolder.getContext()
                         .getAuthentication().getPrincipal();
 
         if (currentUser.getRole() == Role.USER && !currentUser.getId().equals(id)) {
-            throw new RuntimeException("You can only delete your own account");
+            throw new AccessDeniedException("You can only delete your own account");
         }
 
         userRepository.deleteById(id);
@@ -150,5 +155,17 @@ public class UserServiceImpl implements UserService {
                 user.getLastName(),
                 user.getRole().name()
         );
+    }
+
+    @Override
+    public AuthResponse refresh(RefreshRequest refreshRequest) {
+        String newAccessToken = refreshTokenService.refreshAccessToken(refreshRequest.getRefreshToken());
+        return new AuthResponse(newAccessToken, refreshRequest.getRefreshToken());
+    }
+
+    @Override
+    public void logout(RefreshRequest refreshRequest) {
+        refreshTokenService.deleteByToken(refreshRequest.getRefreshToken());
+        log.info("User logged out");
     }
 }

@@ -1,5 +1,7 @@
 package by.egor.authservice.security;
 
+import by.egor.authservice.entity.User;
+import by.egor.authservice.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,7 +23,7 @@ import java.io.IOException;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService;
+    private final UserRepository userRepository; // ← вместо UserDetailsService
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -38,25 +40,24 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String token = authHeader.substring(7);
 
-        String username = jwtService.extractUsername(token);
+        try {
+            Long userId = jwtService.extractUserId(token);
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            try {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                User user = userRepository.findById(userId).orElse(null);
 
-                if (jwtService.isTokenValid(token, userDetails)) {
+                if (user != null && jwtService.isTokenValid(token, user)) {
                     UsernamePasswordAuthenticationToken auth =
                             new UsernamePasswordAuthenticationToken(
-                                    userDetails,
+                                    user,
                                     null,
-                                    userDetails.getAuthorities()
+                                    user.getAuthorities()
                             );
-
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
-            } catch (Exception e) {
-                log.warn("Could not authenticate user: {}", e.getMessage());
             }
+        } catch (Exception e) {
+            log.warn("Could not authenticate user: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);

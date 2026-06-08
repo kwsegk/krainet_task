@@ -9,8 +9,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -25,6 +27,7 @@ public class UserServiceImpl implements UserService {
     private final JwtService jwtService;
 
     @Override
+    @Transactional
     public UserResponse register(RegisterRequest registerRequest) {
         if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
             throw new RuntimeException("Username is already in use");
@@ -64,15 +67,25 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserResponse getById(Long id) {
         log.info("Fetching user by id: {}", id);
 
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+
+        User currentUser = (User) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+
+        if (currentUser.getRole() == Role.USER && !currentUser.getId().equals(id)) {
+            throw new RuntimeException("You can only view your own account");
+        }
 
         return toResponse(user);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<UserResponse> getAll() {
         log.info("Fetching all users");
 
@@ -83,10 +96,19 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public UserResponse update(Long id, UserUpdateRequest updateRequest) {
         log.info("Updating user with id: {}", id);
 
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+
+        User currentUser = (User) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+
+        if (currentUser.getRole() == Role.USER && !currentUser.getId().equals(id)) {
+            throw new RuntimeException("You can only update your own account");
+        }
 
         user.setUsername(updateRequest.getUsername());
         user.setFirstName(updateRequest.getFirstName());
@@ -100,11 +122,19 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
         log.info("Deleting user with id: {}", id);
 
         if (!userRepository.existsById(id)) {
             throw new RuntimeException("User not found with id: " + id);
+        }
+
+        User currentUser = (User) SecurityContextHolder.getContext()
+                        .getAuthentication().getPrincipal();
+
+        if (currentUser.getRole() == Role.USER && !currentUser.getId().equals(id)) {
+            throw new RuntimeException("You can only delete your own account");
         }
 
         userRepository.deleteById(id);

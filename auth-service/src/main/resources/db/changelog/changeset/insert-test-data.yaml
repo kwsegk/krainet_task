@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: insert-admin
+      author: Egor Kuznetsov
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: username
+                  value: admin
+              - column:
+                  name: password
+                  value: $2a$10$slYQmyNdgzrKVrgqwbRLYOnNpOf4HCKGjh/9S1FbNzJe0jHw7C8Hy
+              - column:
+                  name: email
+                  value: admin@gmail.com
+              - column:
+                  name: first_name
+                  value: admin
+              - column:
+                  name: last_name
+                  value: admin
+              - column:
+                  name: role
+                  value: ADMIN

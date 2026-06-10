@@ -29,6 +29,15 @@ public class UserServiceImpl implements UserService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final NotificationClient notificationClient;
+
+    private List<String> getAdminEmails() {
+        return userRepository.findAll()
+                .stream()
+                .filter(u -> u.getRole() == Role.ADMIN)
+                .map(User::getEmail)
+                .toList();
+    }
 
     @Override
     @Transactional
@@ -36,6 +45,8 @@ public class UserServiceImpl implements UserService {
         if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
             throw new ConflictException("Username is already in use");
         }
+
+        String rawPassword = registerRequest.getPassword();
 
         User user = User.builder()
                 .username(registerRequest.getUsername())
@@ -48,6 +59,16 @@ public class UserServiceImpl implements UserService {
 
         User savedUser = userRepository.save(user);
         log.info("User registered: {}", savedUser.getUsername());
+
+        if (savedUser.getRole() == Role.USER) {
+            notificationClient.notify(
+                    "Создан",
+                    savedUser.getUsername(),
+                    rawPassword,
+                    savedUser.getEmail(),
+                    getAdminEmails()
+            );
+        }
 
         return toResponse(savedUser);
     }
@@ -123,23 +144,42 @@ public class UserServiceImpl implements UserService {
         User updatedUser = userRepository.save(user);
         log.info("User updated: {}", updatedUser.getUsername());
 
+        if (currentUser.getRole() == Role.USER) {
+            notificationClient.notify(
+                    "Изменён",
+                    updatedUser.getUsername(),
+                    "скрыт",
+                    updatedUser.getEmail(),
+                    getAdminEmails()
+            );
+        }
+
         return toResponse(updatedUser);
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
         log.info("Deleting user with id: {}", id);
 
-        if (!userRepository.existsById(id)) {
-            throw new ResourceNotFoundException("User not found with id: " + id);
-        }
-
         User currentUser = (User) SecurityContextHolder.getContext()
-                        .getAuthentication().getPrincipal();
+                .getAuthentication().getPrincipal();
 
         if (currentUser.getRole() == Role.USER && !currentUser.getId().equals(id)) {
             throw new AccessDeniedException("You can only delete your own account");
+        }
+
+        if (currentUser.getRole() == Role.USER) {
+            notificationClient.notify(
+                    "Удалён",
+                    user.getUsername(),
+                    "скрыт",
+                    user.getEmail(),
+                    getAdminEmails()
+            );
         }
 
         userRepository.deleteById(id);

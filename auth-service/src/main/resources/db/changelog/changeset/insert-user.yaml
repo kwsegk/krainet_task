@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: insert-user
+      author: Egor Kuznetsov
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: username
+                  value: Test
+              - column:
+                  name: password
+                  value: $2a$10$ZWG7OzbO2xiuZVDHlbr4A.ws5onH/BlI2SYzn/aFBsg63dqsvBodO
+              - column:
+                  name: email
+                  value: test@mail.ru
+              - column:
+                  name: first_name
+                  value: Egor
+              - column:
+                  name: last_name
+                  value: Kuznetsov
+              - column:
+                  name: role
+                  value: USER

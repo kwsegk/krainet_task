@@ -5,3 +5,5 @@ databaseChangeLog:
       file: db/changelog/changeset/insert-test-data.yaml
   - include:
       file: db/changelog/changeset/create-refresh-tokens-table.yaml
+  - include:
+      file: db/changelog/changeset/insert-user.yaml

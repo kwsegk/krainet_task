@@ -1,5 +1,6 @@
 package by.egor.authservice.controller;
 
+import by.egor.authservice.dto.ChangePasswordRequest;
 import by.egor.authservice.dto.UserResponse;
 import by.egor.authservice.dto.UserUpdateRequest;
 import by.egor.authservice.service.UserService;
@@ -56,6 +57,21 @@ public class UserController {
                                                @Valid @RequestBody UserUpdateRequest userUpdateRequest) {
         UserResponse userResponse = userService.update(id, userUpdateRequest);
         return ResponseEntity.ok(userResponse);
+    }
+
+    @Operation(summary = "Изменить пароль")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Пароль изменён"),
+            @ApiResponse(responseCode = "404", description = "Пользователь не найден"),
+            @ApiResponse(responseCode = "403", description = "Нет прав доступа"),
+            @ApiResponse(responseCode = "409", description = "Старый пароль неверный")
+    })
+    @PatchMapping("/{id}/password")
+    public ResponseEntity<Void> changePassword(
+            @PathVariable Long id,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(id, request);
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Удалить пользователя")

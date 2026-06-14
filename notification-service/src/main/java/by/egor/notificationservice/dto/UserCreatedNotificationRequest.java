@@ -1,4 +1,4 @@
-package by.egor.authservice.dto;
+package by.egor.notificationservice.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,8 +9,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class NotificationRequest {
-    private String action;
+public class UserCreatedNotificationRequest {
     private String username;
     private String password;
     private String userEmail;

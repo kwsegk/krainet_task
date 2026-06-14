@@ -61,8 +61,7 @@ public class UserServiceImpl implements UserService {
         log.info("User registered: {}", savedUser.getUsername());
 
         if (savedUser.getRole() == Role.USER) {
-            notificationClient.notify(
-                    "Создан",
+            notificationClient.notifyUserCreated(
                     savedUser.getUsername(),
                     rawPassword,
                     savedUser.getEmail(),
@@ -136,6 +135,10 @@ public class UserServiceImpl implements UserService {
             throw new AccessDeniedException("You can only update your own account");
         }
 
+        String oldUsername = user.getUsername();
+        String oldEmail = user.getEmail();
+        String oldFirstName = user.getFirstName();
+        String oldLastName = user.getLastName();
         user.setUsername(updateRequest.getUsername());
         user.setFirstName(updateRequest.getFirstName());
         user.setLastName(updateRequest.getLastName());
@@ -145,16 +148,53 @@ public class UserServiceImpl implements UserService {
         log.info("User updated: {}", updatedUser.getUsername());
 
         if (currentUser.getRole() == Role.USER) {
-            notificationClient.notify(
-                    "Изменён",
-                    updatedUser.getUsername(),
-                    "скрыт",
-                    updatedUser.getEmail(),
+            notificationClient.notifyUserUpdated(
+                    oldUsername, updatedUser.getUsername(),
+                    oldEmail, updatedUser.getEmail(),
+                    oldFirstName, updatedUser.getFirstName(),
+                    oldLastName, updatedUser.getLastName(),
                     getAdminEmails()
             );
         }
 
         return toResponse(updatedUser);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(Long id, ChangePasswordRequest request) {
+        log.info("Changing password for user with id: {}", id);
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
+        User currentUser = (User) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+
+        if (currentUser.getRole() == Role.USER && !currentUser.getId().equals(id)) {
+            throw new AccessDeniedException("You can only change your own password");
+        }
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new ConflictException("Old password is incorrect");
+        }
+
+        String oldPassword = request.getOldPassword();
+        String newPassword = request.getNewPassword();
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        log.info("Password changed for user: {}", user.getUsername());
+
+        if (currentUser.getRole() == Role.USER) {
+            notificationClient.notifyPasswordChanged(
+                    user.getUsername(),
+                    user.getEmail(),
+                    oldPassword,
+                    newPassword,
+                    getAdminEmails()
+            );
+        }
     }
 
     @Override
@@ -172,11 +212,11 @@ public class UserServiceImpl implements UserService {
             throw new AccessDeniedException("You can only delete your own account");
         }
 
+        refreshTokenService.deleteByUser(user);
+
         if (currentUser.getRole() == Role.USER) {
-            notificationClient.notify(
-                    "Удалён",
+            notificationClient.notifyUserDeleted(
                     user.getUsername(),
-                    "скрыт",
                     user.getEmail(),
                     getAdminEmails()
             );

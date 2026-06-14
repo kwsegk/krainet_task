@@ -14,7 +14,7 @@ databaseChangeLog:
                   value: $2a$10$ZWG7OzbO2xiuZVDHlbr4A.ws5onH/BlI2SYzn/aFBsg63dqsvBodO
               - column:
                   name: email
-                  value: admin@gmail.com
+                  value: kuzinkuza2005@gmail.com
               - column:
                   name: first_name
                   value: Ivan

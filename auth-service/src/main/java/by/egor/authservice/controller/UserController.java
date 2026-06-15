@@ -62,9 +62,9 @@ public class UserController {
     @Operation(summary = "Изменить пароль")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Пароль изменён"),
+            @ApiResponse(responseCode = "400", description = "Старый пароль неверный"),
             @ApiResponse(responseCode = "404", description = "Пользователь не найден"),
-            @ApiResponse(responseCode = "403", description = "Нет прав доступа"),
-            @ApiResponse(responseCode = "409", description = "Старый пароль неверный")
+            @ApiResponse(responseCode = "403", description = "Нет прав доступа")
     })
     @PatchMapping("/{id}/password")
     public ResponseEntity<Void> changePassword(

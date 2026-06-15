@@ -37,3 +37,11 @@ build/
 
 # VS Code
 .vscode/
+
+# Logs
+*.log
+logs/
+
+# Local config overrides
+application-local.yml
+application-local.properties

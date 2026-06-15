@@ -1,7 +1,10 @@
 package by.egor.authservice.security;
 
 import by.egor.authservice.entity.User;
+import by.egor.authservice.handler.ErrorResponseWriter;
 import by.egor.authservice.repository.UserRepository;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,6 +25,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final ErrorResponseWriter errorWriter;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -54,8 +58,14 @@ public class JwtFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
             }
-        } catch (Exception e) {
-            log.warn("Could not authenticate user: {}", e.getMessage());
+        } catch (ExpiredJwtException e) {
+            log.warn("Token expired: {}", e.getMessage());
+            errorWriter.write(response, 401, "Token has expired");
+            return;
+        } catch (JwtException e) {
+            log.warn("Invalid token: {}", e.getMessage());
+            errorWriter.write(response, 401, "Invalid token");
+            return;
         }
 
         filterChain.doFilter(request, response);

@@ -66,7 +66,6 @@ public class AuthController {
     @Operation(summary = "Выход", description = "Удаляет refresh token из БД")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Выход выполнен"),
-            @ApiResponse(responseCode = "404", description = "Refresh token не найден")
     })
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@Valid @RequestBody RefreshRequest refreshRequest) {

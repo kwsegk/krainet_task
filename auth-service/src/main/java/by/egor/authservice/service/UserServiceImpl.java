@@ -1,6 +1,7 @@
 package by.egor.authservice.service;
 
 import by.egor.authservice.exception.AccessDeniedException;
+import by.egor.authservice.exception.BadRequestException;
 import by.egor.authservice.exception.ConflictException;
 import by.egor.authservice.exception.ResourceNotFoundException;
 import by.egor.authservice.repository.UserRepository;
@@ -44,6 +45,10 @@ public class UserServiceImpl implements UserService {
     public UserResponse register(RegisterRequest registerRequest) {
         if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
             throw new ConflictException("Username is already in use");
+        }
+
+        if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
+            throw new ConflictException("Email is already in use");
         }
 
         String rawPassword = registerRequest.getPassword();
@@ -135,6 +140,16 @@ public class UserServiceImpl implements UserService {
             throw new AccessDeniedException("You can only update your own account");
         }
 
+        if (!user.getUsername().equals(updateRequest.getUsername()) &&
+                userRepository.findByUsername(updateRequest.getUsername()).isPresent()) {
+            throw new ConflictException("Username is already in use");
+        }
+
+        if (!user.getEmail().equals(updateRequest.getEmail()) &&
+                userRepository.findByEmail(updateRequest.getEmail()).isPresent()) {
+            throw new ConflictException("Email is already in use");
+        }
+
         String oldUsername = user.getUsername();
         String oldEmail = user.getEmail();
         String oldFirstName = user.getFirstName();
@@ -176,7 +191,7 @@ public class UserServiceImpl implements UserService {
         }
 
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-            throw new ConflictException("Old password is incorrect");
+            throw new BadRequestException("Old password is incorrect");
         }
 
         String oldPassword = request.getOldPassword();

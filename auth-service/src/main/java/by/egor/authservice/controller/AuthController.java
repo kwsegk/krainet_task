@@ -29,7 +29,7 @@ public class AuthController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Пользователь создан"),
-            @ApiResponse(responseCode = "409", description = "Username уже занят")
+            @ApiResponse(responseCode = "409", description = "Username или email уже занят")
     })
     @PostMapping("/register")
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {

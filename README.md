@@ -52,20 +52,20 @@
 
 ### 1. Клонировать репозиторий
 
-\```bash
+```bash
 git clone https://github.com/kwsegk/krainet_task.git
 cd krainet_task
-\```
+```
 
 ### 2. Создать `.env` файл
 
-\```bash
+```bash
 cp .env.example .env
-\```
+```
 
 Заполнить `.env` своими значениями:
 
-\```
+```
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
 
@@ -77,16 +77,16 @@ MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
 MAIL_USERNAME=your@gmail.com
 MAIL_PASSWORD=your-app-password
-\```
+```
 
 ### 3. Указать email администратора
 
 Чтобы администратор получал уведомления, укажите его реальный email **до запуска системы**:
 
 Открыть файл:
-\```
+```
 auth-service/src/main/resources/db/changelog/changeset/insert-test-data.yaml
-\```
+```
 
 Найти строку с email администратора и заменить на реальный адрес.
 
@@ -107,9 +107,9 @@ auth-service/src/main/resources/db/changelog/changeset/insert-test-data.yaml
 
 ### 5. Запустить систему
 
-\```bash
+```bash
 docker-compose up --build
-\```
+```
 
 Система поднимется автоматически:
 - PostgreSQL стартует первым

@@ -50,7 +50,8 @@ public class UserController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Пользователь обновлён"),
             @ApiResponse(responseCode = "404", description = "Пользователь не найден"),
-            @ApiResponse(responseCode = "403", description = "Нет прав доступа")
+            @ApiResponse(responseCode = "403", description = "Нет прав доступа"),
+            @ApiResponse(responseCode = "409", description = "Имя пользователя или почта неуникальны")
     })
     @PutMapping("/{id}")
     public ResponseEntity<UserResponse> update(@PathVariable Long id,
